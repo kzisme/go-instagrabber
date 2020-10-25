@@ -6,29 +6,24 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
 func main() {
-
-	ScrapeSingleImage("www.example.com")
-
-	fileName := "test.jpg"
-	URL := ""
-	err := downloadImage(URL, fileName)
+	err := downloadImage(ScrapeSingleImage("https://www.instagram.com/p/Bh2mQ1UBcJS/"))
 
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Printf("File %s downloaded in current working directory", fileName)
 }
 
 // ScrapeSingleImage -  Image Download
-func ScrapeSingleImage(s string) string {
-	res, err := http.Get(s)
+func ScrapeSingleImage(singleImageURL string) (string, string) {
+	res, err := http.Get(singleImageURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,16 +40,31 @@ func ScrapeSingleImage(s string) string {
 	}
 
 	var URL string
+	var fileName string
 
+	// Returning CDN URL from generic Instagram post
 	doc.Find("meta").Each(func(i int, s *goquery.Selection) {
 		if property, _ := s.Attr("property"); property == "og:image" {
 			content, _ := s.Attr("content")
-			fmt.Printf(content)
 
-			content = URL
+			URL = content
 		}
 	})
-	return URL
+
+	// Returning Post-Identifier for filename
+	doc.Find("meta").Each(func(i int, sel *goquery.Selection) {
+		if property, _ := sel.Attr("property"); property == "og:url" {
+			myURL, err := url.Parse(singleImageURL)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fileName = path.Base(myURL.Path) + ".jpg"
+		}
+	})
+
+	fmt.Printf("Filename: %s CDN URL: %s\n", fileName, URL)
+	return URL, fileName
 }
 
 func downloadImage(URL, fileName string) error {
@@ -81,6 +91,8 @@ func downloadImage(URL, fileName string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("File %s downloaded in current working directory", fileName)
 
 	return nil
 }
