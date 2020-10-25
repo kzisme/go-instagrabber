@@ -7,9 +7,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 func main() {
+
+	ScrapeSingleImage("www.example.com")
+
 	fileName := "test.jpg"
 	URL := ""
 	err := downloadImage(URL, fileName)
@@ -19,6 +24,37 @@ func main() {
 	}
 
 	fmt.Printf("File %s downloaded in current working directory", fileName)
+}
+
+// ScrapeSingleImage -  Image Download
+func ScrapeSingleImage(s string) string {
+	res, err := http.Get(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+	}
+
+	// Load the HTML document
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var URL string
+
+	doc.Find("meta").Each(func(i int, s *goquery.Selection) {
+		if property, _ := s.Attr("property"); property == "og:image" {
+			content, _ := s.Attr("content")
+			fmt.Printf(content)
+
+			content = URL
+		}
+	})
+	return URL
 }
 
 func downloadImage(URL, fileName string) error {
