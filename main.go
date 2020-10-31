@@ -9,12 +9,14 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
 func main() {
-	err := downloadImage(ScrapeSingleImage("https://www.instagram.com/p/Bh2mQ1UBcJS/"))
+	// err := downloadImage(ScrapeSingleImage("https://www.instagram.com/p/Bh2mQ1UBcJS/"))
+	err := downloadImage(ScrapeSingleImage("https://www.instagram.com/p/CFz2Vy9hJnV/"))
 
 	if err != nil {
 		log.Fatal(err)
@@ -22,7 +24,7 @@ func main() {
 }
 
 // ScrapeSingleImage -  Image Download
-func ScrapeSingleImage(singleImageURL string) (string, string) {
+func ScrapeSingleImage(singleImageURL string) (string, string, string) {
 	res, err := http.Get(singleImageURL)
 	if err != nil {
 		log.Fatal(err)
@@ -41,6 +43,7 @@ func ScrapeSingleImage(singleImageURL string) (string, string) {
 
 	var URL string
 	var fileName string
+	var authorID string
 
 	// Returning CDN URL from generic Instagram post
 	doc.Find("meta").Each(func(i int, s *goquery.Selection) {
@@ -63,11 +66,20 @@ func ScrapeSingleImage(singleImageURL string) (string, string) {
 		}
 	})
 
+	// Pull authorID from page to create directory
+	doc.Find("meta").Each(func(i int, sel *goquery.Selection) {
+		if property, _ := sel.Attr("property"); property == "instapp:owner_user_id" {
+			content, _ := sel.Attr("content")
+
+			authorID = content
+		}
+	})
+
 	fmt.Printf("Filename: %s CDN URL: %s\n", fileName, URL)
-	return URL, fileName
+	return URL, fileName, authorID
 }
 
-func downloadImage(URL, fileName string) error {
+func downloadImage(URL, fileName string, authorID string) error {
 	//Get the response bytes from the url
 	response, err := http.Get(URL)
 	if err != nil {
@@ -79,8 +91,12 @@ func downloadImage(URL, fileName string) error {
 	if response.StatusCode != 200 {
 		return errors.New("Received non 200 response code")
 	}
+
+	newpath := filepath.Join(filepath.Dir(os.Args[0]), authorID)
+	os.Mkdir(newpath, os.ModePerm)
+
 	//Create a empty file
-	file, err := os.Create(fileName)
+	file, err := os.Create(filepath.Join(newpath, fileName))
 	if err != nil {
 		return err
 	}
