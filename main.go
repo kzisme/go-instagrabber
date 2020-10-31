@@ -15,8 +15,7 @@ import (
 )
 
 func main() {
-	// err := downloadImage(ScrapeSingleImage("https://www.instagram.com/p/Bh2mQ1UBcJS/"))
-	err := downloadImage(ScrapeSingleImage("https://www.instagram.com/p/CFz2Vy9hJnV/"))
+	err := downloadImage(ScrapeSingleImage(""))
 
 	if err != nil {
 		log.Fatal(err)
@@ -75,7 +74,7 @@ func ScrapeSingleImage(singleImageURL string) (string, string, string) {
 		}
 	})
 
-	fmt.Printf("Filename: %s CDN URL: %s\n", fileName, URL)
+	fmt.Printf("Filename: %s\n CDN URL: %s\n", fileName, URL)
 	return URL, fileName, authorID
 }
 
